@@ -43,7 +43,7 @@ const String allowedUIDs[] = {
 };
 const int allowedCount = sizeof(allowedUIDs) / sizeof(allowedUIDs[0]);
 
-MFRC522_I2C rfid(RFID_ADDR, RST_PIN);
+MFRC522 rfid(RFID_ADDR, RST_PIN);
 
 void setup() {
   Serial.begin(9600);

@@ -22,21 +22,27 @@
     IN1 → D7  (Relay 1: KUNCI KONTAK)
     IN2 → D8  (Relay 2: STARTER)
 
-  WIRING OUTPUT RELAY → MOTOR (12V)
-    Relay 1 (Kunci Kontak):
-      Aki 12V (+) → COM1
-      NO1         → Kabel kunci kontak (ke CDI/koil/ECU)
-    Relay 2 (Starter):
-      Aki 12V (+) → COM2
-      NO2         → Kabel starter (parallel dengan tombol starter)
+  WIRING OUTPUT (CASCADE: Relay Modul → Bosch → Motor)
+
+    Relay Modul Channel 1 (D7) trigger Bosch #1:
+      Aki 12V (+) → COM1 modul
+      NO1 modul   → Bosch #1 pin 86 (coil +)
+      Bosch #1 pin 85 → GND aki (coil −)
+      Bosch #1 pin 30  ↔ pin 87  → bridge 2 KABEL KUNCI KONTAK motor
+
+    Relay Modul Channel 2 (D8) trigger Bosch #2:
+      Aki 12V (+) → COM2 modul
+      NO2 modul   → Bosch #2 pin 86 (coil +)
+      Bosch #2 pin 85 → GND aki (coil −)
+      Bosch #2 pin 30  ↔ pin 87  → bridge 2 KABEL TOMBOL STARTER motor
 
     Aki 12V (−) → GND aki motor (DAN ke GND Nano — ground harus disatukan)
 
-  PERINGATAN ARUS:
-    - Modul relay biasa max 10A — CUKUP untuk kunci kontak (~2A)
-    - Starter motor butuh 30-100A — TIDAK CUKUP pakai relay modul biasa!
-    - Untuk starter, pakai RELAY OTOMOTIF (Bosch 5-pin 30A/40A)
-      yang digerakkan oleh relay modul (cascade)
+  CATATAN:
+    - Output Bosch 30↔87 bekerja sebagai SAKLAR PENGGANTI kunci kontak/starter
+    - Tidak mengalirkan 12V dari aki — hanya menyambung 2 kabel motor yang sudah ada
+    - 2 unit Bosch dibutuhkan karena tiap unit cuma SPDT (1 pole)
+    - Dioda 1N4007 paralel coil Bosch (katoda ke pin 86) untuk proteksi spike
 */
 
 #include <Wire.h>

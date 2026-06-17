@@ -25,21 +25,21 @@ flowchart TB
     end
 
     subgraph CTRL["🔌 KONTROL"]
-        REL1("🔌 Relay 2-Ch<br/>Channel 1")
-        REL2("🔌 Relay 2-Ch<br/>Channel 2")
-        BOSCH("⚙️ Relay Bosch 40A")
+        REL1("🔌 Relay Modul Ch1")
+        REL2("🔌 Relay Modul Ch2")
+        BOSCH1("⚙️ Bosch #1<br/>(Kunci Kontak)")
+        BOSCH2("⚙️ Bosch #2<br/>(Starter)")
     end
 
-    subgraph OUTPUT["🏍️ OUTPUT"]
-        IGN("🔑 Ignition<br/>CDI / Koil")
-        STARTER("⚡ Starter Motor")
+    subgraph OUTPUT["🏍️ OUTPUT MOTOR"]
+        IGN("🔑 2 kabel<br/>Kunci Kontak")
+        STARTER("⚡ 2 kabel<br/>Tombol Starter")
     end
 
     AKI --> FUSE
     FUSE --> STEP
-    FUSE -.->|"12V"| REL1
-    FUSE -.->|"12V"| REL2
-    FUSE -.->|"12V high-current"| BOSCH
+    FUSE -.->|"12V trigger"| REL1
+    FUSE -.->|"12V trigger"| REL2
 
     STEP -->|"5V"| NANO
 
@@ -49,9 +49,10 @@ flowchart TB
     NANO -->|"D7"| REL1
     NANO -->|"D8"| REL2
 
-    REL1 -->|"NO1 → 12V"| IGN
-    REL2 -->|"NO2 trigger"| BOSCH
-    BOSCH -->|"87 → 12V"| STARTER
+    REL1 -->|"NO1 → coil"| BOSCH1
+    REL2 -->|"NO2 → coil"| BOSCH2
+    BOSCH1 -->|"30↔87 bridge"| IGN
+    BOSCH2 -->|"30↔87 bridge"| STARTER
 
     classDef power fill:#ffd6d6,stroke:#cc0000,stroke-width:2px,color:#000000
     classDef input fill:#d6e8ff,stroke:#0066cc,stroke-width:2px,color:#000000
@@ -62,7 +63,7 @@ flowchart TB
     class AKI,FUSE,STEP power
     class CARD,READER input
     class NANO brain
-    class REL1,REL2,BOSCH ctrl
+    class REL1,REL2,BOSCH1,BOSCH2 ctrl
     class IGN,STARTER output
 ```
 
@@ -269,38 +270,63 @@ flowchart LR
     style nd8 fill:#ffffff,color:#000000,stroke:#333333
 ```
 
-### 3.3 Relay Channel 1 → Ignition Motor
+### 3.3 Cascade #1 — Relay Modul Ch1 + Bosch #1 → Bridge Kunci Kontak
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart LR
     AKI(("🔋 Aki 12V +"))
     FUSE["🔥 Fuse 30A"]
+    GND(("⚫ GND aki"))
 
     subgraph REL["Relay Modul Channel 1"]
         com1["COM1"]
         no1["NO1"]
-        nc1["NC1 ❌"]
     end
 
-    CDI["🔑 Kabel Ignition Motor<br/>(ke CDI / Koil / ECU)"]
+    subgraph BOSCH1["⚙️ Bosch #1 (Kunci Kontak)"]
+        b30a["Pin 30"]
+        b87a["Pin 87"]
+        b85a["Pin 85 (coil −)"]
+        b86a["Pin 86 (coil +)"]
+    end
 
+    KK_A["🔑 Kabel Kunci Kontak A<br/>(salah satu sisi switch)"]
+    KK_B["🔑 Kabel Kunci Kontak B<br/>(sisi lain switch)"]
+    DIODE1["🔻 Diode 1N4007"]
+
+    %% Trigger path (sinyal coil)
     AKI ==>|"🔴 merah"| FUSE
-    FUSE ==>|"🔴 merah (input)"| com1
-    no1 ==>|"🔴 merah (output ke kunci kontak)"| CDI
+    FUSE ==>|"🔴 merah"| com1
+    no1 ==>|"🟡 kuning"| b86a
+    GND ==>|"⚫ hitam"| b85a
+
+    %% Bridge path (saklar pengganti)
+    KK_A ==>|"warna motor"| b30a
+    b87a ==>|"warna motor"| KK_B
+
+    %% Flyback
+    b85a -.->|"🔻 katoda ke 86"| DIODE1
+    DIODE1 -.-> b86a
 
     style AKI fill:#ffd6d6,color:#000000,stroke:#cc0000,stroke-width:2px
     style FUSE fill:#ffe8d6,color:#000000,stroke:#ee6600,stroke-width:2px
+    style GND fill:#d6d6d6,color:#000000,stroke:#000000,stroke-width:2px
     style com1 fill:#ffd6d6,color:#000000,stroke:#cc0000
-    style no1 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
-    style nc1 fill:#e0e0e0,color:#444444,stroke:#666666,stroke-dasharray:5 5
-    style CDI fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style no1 fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style b30a fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b87a fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b85a fill:#d6d6d6,color:#000000,stroke:#000000
+    style b86a fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style KK_A fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style KK_B fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style DIODE1 fill:#d6d6ff,color:#000000,stroke:#3333cc,stroke-dasharray:3 3
 ```
 
-### 3.4 Relay Channel 2 + Bosch → Starter (Cascade)
+### 3.4 Cascade #2 — Relay Modul Ch2 + Bosch #2 → Bridge Tombol Starter
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart LR
     AKI(("🔋 Aki 12V +"))
     FUSE["🔥 Fuse 30A"]
@@ -311,41 +337,43 @@ flowchart LR
         no2["NO2"]
     end
 
-    subgraph BOSCH["⚙️ Bosch 40A 5-pin"]
-        b30["Pin 30 (COM)"]
-        b87["Pin 87 (NO)"]
-        b85["Pin 85 (coil −)"]
-        b86["Pin 86 (coil +)"]
+    subgraph BOSCH2["⚙️ Bosch #2 (Starter)"]
+        b30b["Pin 30"]
+        b87b["Pin 87"]
+        b85b["Pin 85 (coil −)"]
+        b86b["Pin 86 (coil +)"]
     end
 
-    STARTER["⚡ Solenoid Starter"]
-    DIODE["🔻 Diode 1N4007"]
+    ST_A["⚡ Kabel Tombol Starter A"]
+    ST_B["⚡ Kabel Tombol Starter B"]
+    DIODE2["🔻 Diode 1N4007"]
 
-    %% Trigger path (sinyal low-current)
+    %% Trigger path
     AKI ==>|"🔴 merah"| FUSE
     FUSE ==>|"🔴 merah"| com2
-    no2 ==>|"🟡 kuning"| b86
-    GND ==>|"⚫ hitam"| b85
+    no2 ==>|"🟡 kuning"| b86b
+    GND ==>|"⚫ hitam"| b85b
 
-    %% High-current path
-    FUSE ==>|"🔴 AWG 10 ⚡"| b30
-    b87 ==>|"🔴 AWG 10 ⚡"| STARTER
+    %% Bridge path (saklar pengganti)
+    ST_A ==>|"warna motor"| b30b
+    b87b ==>|"warna motor"| ST_B
 
-    %% Flyback diode
-    b85 -.->|"🔻 katoda ke 86"| DIODE
-    DIODE -.-> b86
+    %% Flyback
+    b85b -.->|"🔻 katoda ke 86"| DIODE2
+    DIODE2 -.-> b86b
 
     style AKI fill:#ffd6d6,color:#000000,stroke:#cc0000,stroke-width:2px
     style FUSE fill:#ffe8d6,color:#000000,stroke:#ee6600,stroke-width:2px
     style GND fill:#d6d6d6,color:#000000,stroke:#000000,stroke-width:2px
     style com2 fill:#ffd6d6,color:#000000,stroke:#cc0000
     style no2 fill:#ffe8d6,color:#000000,stroke:#ee6600
-    style b30 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
-    style b87 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
-    style b85 fill:#d6d6d6,color:#000000,stroke:#000000
-    style b86 fill:#ffe8d6,color:#000000,stroke:#ee6600
-    style STARTER fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
-    style DIODE fill:#d6d6ff,color:#000000,stroke:#3333cc,stroke-dasharray:3 3
+    style b30b fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b87b fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b85b fill:#d6d6d6,color:#000000,stroke:#000000
+    style b86b fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style ST_A fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style ST_B fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style DIODE2 fill:#d6d6ff,color:#000000,stroke:#3333cc,stroke-dasharray:3 3
 ```
 
 ---
@@ -454,9 +482,10 @@ sequenceDiagram
     participant Card as 💳 Kartu
     participant RFID as 📡 RC522
     participant Nano as 🤖 Nano
-    participant R1 as 🔌 Relay1<br/>(Kunci Kontak)
-    participant R2 as 🔌 Relay2<br/>(Starter)
-    participant Bosch as ⚙️ Bosch
+    participant R1 as 🔌 Modul Ch1
+    participant R2 as 🔌 Modul Ch2
+    participant B1 as ⚙️ Bosch #1<br/>(Kunci Kontak)
+    participant B2 as ⚙️ Bosch #2<br/>(Starter)
     participant Motor as 🏍️ Motor
 
     Note over Nano: State: OFF
@@ -469,17 +498,21 @@ sequenceDiagram
     Nano->>Nano: isAuthorized() ✓
 
     Nano->>R1: digitalWrite(D7, LOW)
-    R1->>Motor: 12V → CDI/Koil ON
+    R1->>B1: NO1 ON → trigger coil
+    B1->>Motor: bridge kunci kontak (30↔87)
+    Note over Motor: 🔑 Kunci kontak ON
     Note over Nano: delay 500ms
 
     Nano->>R2: digitalWrite(D8, LOW)
-    R2->>Bosch: trigger pin 86
-    Bosch->>Motor: 12V high-current → Starter
-    Note over Nano: delay 2000ms (crank)
+    R2->>B2: NO2 ON → trigger coil
+    B2->>Motor: bridge tombol starter (30↔87)
+    Note over Motor: ⚡ Starter cranking
+    Note over Nano: delay 2000ms
 
     Nano->>R2: digitalWrite(D8, HIGH)
-    R2->>Bosch: trigger OFF
-    Bosch->>Motor: Starter stop
+    R2->>B2: NO2 OFF
+    B2->>Motor: bridge starter terbuka
+    Note over Motor: Starter berhenti, mesin hidup
 
     Note over Nano: State: ON<br/>motorOn = true
 
@@ -488,7 +521,9 @@ sequenceDiagram
     RFID->>Nano: Read UID
     Nano->>Nano: isAuthorized() ✓
     Nano->>R1: digitalWrite(D7, HIGH)
-    R1->>Motor: 12V cut → Engine mati
+    R1->>B1: NO1 OFF
+    B1->>Motor: bridge kunci kontak terbuka
+    Note over Motor: 🔑 Mesin mati
 
     Note over Nano: State: OFF<br/>motorOn = false
 ```

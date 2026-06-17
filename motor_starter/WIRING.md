@@ -13,11 +13,11 @@ Pasang ke **motor asli** (12V), bukan simulasi LED.
 | 2 | Modul RFID RC522 I2C V1.1 | 1 | NET-0061 |
 | 3 | Kartu/Keychain RFID 13.56 MHz | 2 | 1 utama, 1 cadangan |
 | 4 | Modul Relay 2-Channel 5V | 1 | Aktif LOW |
-| 5 | Relay Otomotif Bosch 5-pin 40A | 1 | Khusus untuk starter |
-| 6 | Diode 1N4007 | 1 | Flyback diode relay Bosch |
-| 7 | Fuse 30A + holder | 1 | Proteksi jalur utama |
+| 5 | **Relay Otomotif Bosch 5-pin 40A** | **2** | **#1 untuk kunci kontak, #2 untuk starter** |
+| 6 | Diode 1N4007 | 2 | Flyback diode (1 per relay Bosch) |
+| 7 | Fuse 30A + holder | 1 | Proteksi jalur utama dari aki |
 | 8 | Step-down 12V → 5V | 1 | Power supply Nano dari aki |
-| 9 | Kabel otomotif AWG 18-22 | secukupnya | Untuk jalur sinyal & 5V |
+| 9 | Kabel otomotif AWG 18-22 | secukupnya | Untuk jalur sinyal & coil Bosch |
 | 10 | Kabel otomotif AWG 10-12 | secukupnya | Untuk jalur starter (arus besar) |
 | 11 | Heat-shrink tube, isolasi | — | Pelindung sambungan |
 | 12 | Boks plastik/akrilik | 1 | Casing Nano + relay |
@@ -27,19 +27,34 @@ Pasang ke **motor asli** (12V), bukan simulasi LED.
 ## Diagram Blok Sistem
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart LR
     A[Kartu RFID] -.tap.-> B[Modul RC522 I2C]
     B -- I2C --> C[Arduino Nano]
-    C -- D7 --> D[Relay Modul Ch1<br/>Kunci Kontak]
-    C -- D8 --> E[Relay Modul Ch2<br/>Trigger Starter]
-    D -- 12V switch --> F[CDI / Koil / ECU]
-    E -- 12V trigger --> G[Relay Bosch 40A]
-    G -- 12V high-current --> H[Solenoid Starter]
+    C -- D7 --> D[Relay Modul Ch1]
+    C -- D8 --> E[Relay Modul Ch2]
+    D -- trigger coil --> F[Bosch #1<br/>Kunci Kontak]
+    E -- trigger coil --> G[Bosch #2<br/>Starter]
+    F -- bridge --> H[2 kabel kunci kontak motor]
+    G -- bridge --> K[2 kabel tombol starter motor]
     I[Aki 12V] --> D
     I --> E
+    I --> F
     I --> G
     I --> J[Step-down 12V→5V]
     J -- 5V --> C
+
+    style A fill:#d6e8ff,color:#000,stroke:#06c
+    style B fill:#d6e8ff,color:#000,stroke:#06c
+    style C fill:#ffe8d6,color:#000,stroke:#f80,stroke-width:2px
+    style D fill:#d6ffd6,color:#000,stroke:#080
+    style E fill:#d6ffd6,color:#000,stroke:#080
+    style F fill:#ffe0a0,color:#000,stroke:#e60,stroke-width:2px
+    style G fill:#ffe0a0,color:#000,stroke:#e60,stroke-width:2px
+    style H fill:#ffd6e8,color:#000,stroke:#c08
+    style K fill:#ffd6e8,color:#000,stroke:#c08
+    style I fill:#ffd6d6,color:#000,stroke:#c00,stroke-width:2px
+    style J fill:#ffd6d6,color:#000,stroke:#c00
 ```
 
 ---
@@ -85,53 +100,86 @@ flowchart LR
 
 ---
 
-### 4. Output Relay Channel 1 (Kunci Kontak) → Motor
+### 4. Output Relay Modul Channel 1 → Trigger Bosch #1 (Kunci Kontak)
 
-Memutus / menyambung listrik ke CDI / koil / ECU.
-**Skenario:** ganti fungsi kunci kontak fisik.
+Cascade: relay modul nggak langsung ke motor — dia cuma trigger coil Bosch #1.
 
 | Dari | Ke | Warna Kabel | Catatan |
 |---|---|---|---|
-| Aki 12V (+) **setelah fuse** | **COM1** | Merah tebal | Power masuk relay |
-| **NO1** | Kabel ignition motor (input CDI/koil) | Merah/Hitam (cek manual book) | Power keluar saat relay ON |
-| **NC1** | (kosong) | — | Tidak dipakai |
-
-> 💡 Kalau bingung cari kabel ignition: lepas kunci kontak fisik, cari kabel yang **putus arus 12V** saat kunci OFF dan **hidup** saat kunci ON.
+| Aki 12V (+) **setelah fuse** | **COM1** modul | Merah | Sumber 12V untuk trigger |
+| **NO1** modul | Bosch #1 pin **86** (coil +) | Kuning | Sinyal trigger ke coil Bosch #1 |
+| Bosch #1 pin **85** (coil −) | GND aki / chassis | Hitam | Ground coil |
+| **NC1** modul | (kosong) | — | Tidak dipakai |
 
 ---
 
-### 5. Output Relay Channel 2 (Trigger Starter) → Relay Bosch
-
-Relay modul **TIDAK boleh** langsung ke starter (arus 30-100A bisa bakar relay).
-Pakai relay otomotif Bosch sebagai cascade.
+### 5. Output Relay Modul Channel 2 → Trigger Bosch #2 (Starter)
 
 | Dari | Ke | Warna Kabel | Catatan |
 |---|---|---|---|
-| Aki 12V (+) | **COM2** | Merah | Sumber 12V untuk trigger |
-| **NO2** | Bosch pin **86** | Kuning | Sinyal trigger ke coil Bosch |
-| Bosch pin **85** | GND aki | Hitam | Ground coil Bosch |
-| **NC2** | (kosong) | — | — |
+| Aki 12V (+) **setelah fuse** | **COM2** modul | Merah | Sumber 12V untuk trigger |
+| **NO2** modul | Bosch #2 pin **86** (coil +) | Kuning | Sinyal trigger ke coil Bosch #2 |
+| Bosch #2 pin **85** (coil −) | GND aki / chassis | Hitam | Ground coil |
+| **NC2** modul | (kosong) | — | Tidak dipakai |
 
 ---
 
-### 6. Relay Otomotif Bosch 5-pin → Starter
+### 6. Output Bosch → Motor (4 Kabel)
 
-Bosch relay pinout standar:
-- **30** = COM (input arus tinggi)
-- **87** = NO (output ke beban)
-- **87a** = NC (tidak dipakai)
-- **85** = coil GND
-- **86** = coil 12V trigger
+**Setiap Bosch jadi saklar pengganti** — menyambung 2 kabel motor yang sudah ada.
+Output pin **30 ↔ 87** = bridge / saklar tertutup saat relay aktif.
+
+> Bosch tidak mengalirkan 12V dari aki ke motor — dia cuma **menggantikan fungsi saklar fisik**
+> kunci kontak & tombol starter yang sudah ada di motor.
+
+#### 6.1 Bosch #1 — Bridge Kunci Kontak (2 kabel)
+
+Cabut socket kunci kontak fisik motor, sambungkan 2 kabel-nya ke Bosch #1:
 
 | Dari | Ke | Warna Kabel | Catatan |
 |---|---|---|---|
-| Aki 12V (+) **via fuse 30A** | Bosch pin **30** | Merah TEBAL (AWG 10-12) | Sumber arus starter |
-| Bosch pin **87** | Solenoid starter (+) | Merah TEBAL (AWG 10-12) | Output ke starter |
-| Bosch pin **85** | GND aki / chassis | Hitam | Sudah disebut di section 5 |
-| Bosch pin **86** | NO2 relay modul | Kuning | Sudah disebut di section 5 |
-| Bosch pin **87a** | (kosong) | — | — |
+| Kabel kunci kontak motor **A** | Bosch #1 pin **30** | Sesuai warna motor | Salah satu sisi switch |
+| Kabel kunci kontak motor **B** | Bosch #1 pin **87** | Sesuai warna motor | Sisi lain switch |
+| Bosch #1 pin **87a** | (kosong) | — | Tidak dipakai |
 
-> Tambahkan **dioda 1N4007** paralel dengan coil Bosch (pin 85 ↔ 86), katoda (garis) ke pin 86. Untuk proteksi spike tegangan saat coil de-energize.
+> 💡 Kunci kontak motor biasanya cuma punya 2 terminal utama yang **disambungkan** saat kunci ON.
+
+#### 6.2 Bosch #2 — Bridge Tombol Starter (2 kabel)
+
+Cabut socket tombol starter, sambungkan 2 kabel-nya ke Bosch #2:
+
+| Dari | Ke | Warna Kabel | Catatan |
+|---|---|---|---|
+| Kabel tombol starter **A** | Bosch #2 pin **30** | Sesuai warna motor | Salah satu sisi tombol |
+| Kabel tombol starter **B** | Bosch #2 pin **87** | Sesuai warna motor | Sisi lain tombol |
+| Bosch #2 pin **87a** | (kosong) | — | Tidak dipakai |
+
+> 💡 Tombol starter motor cuma punya 2 kabel — saat ditekan, dua-duanya terhubung.
+
+---
+
+### 6.3 Bosch Pinout Reference
+
+```
+       ┌──────────────┐
+       │              │
+  85 ──┤  COIL    OUT ├── 87  (NO)
+  86 ──┤              ├── 87a (NC, kosong)
+       │   SWITCH     │
+       │           ▲  │
+       └───────────┼──┘
+                  30  (COM)
+```
+
+| Pin | Fungsi | Sambung ke |
+|---|---|---|
+| **85** | Coil ground | GND aki |
+| **86** | Coil 12V trigger | NO1/NO2 dari relay modul |
+| **30** | Saklar COM | Kabel motor A |
+| **87** | Saklar NO | Kabel motor B |
+| **87a** | Saklar NC | (kosong) |
+
+> Tambahkan **dioda 1N4007** paralel dengan coil Bosch (pin 85 ↔ 86), katoda (garis hitam) ke pin 86. Untuk proteksi spike tegangan saat coil mati. **2 dioda total** karena 2 Bosch.
 
 ---
 
@@ -155,71 +203,65 @@ Semua ground harus disatukan di **1 titik**:
 ## Diagram Skematik (ASCII)
 
 ```
-                   ┌──────────────────┐
-                   │   AKI MOTOR 12V  │
-                   │  +───────────−   │
-                   └───┬──────────┬───┘
-                       │          │
-                  [Fuse 30A]      │
-                       │          │
-            ┌──────────┴──────────┴────────────────────────┐
-            │                                              │
-            ▼                                              ▼
-    ┌───────────────┐                              ┌─────────────────┐
-    │  STEP-DOWN    │                              │  CHASSIS GND    │
-    │  12V → 5V     │                              │ (titik ground)  │
-    └──┬──────────┬─┘                              └────────▲────────┘
-       │+5V       │GND                                      │
-       │          └──────────────────────────────────────┐  │
-       ▼                                                 │  │
-   ┌───────────────────────────────────────────┐         │  │
-   │            ARDUINO NANO                   │         │  │
-   │  5V  GND  3.3V  D7  D8  D9  A4  A5        │         │  │
-   └──┬───┬────┬─────┬───┬───┬───┬───┬─────────┘         │  │
-      │   │    │     │   │   │   │   │                   │  │
-      │   └────│─────│───│───│───│───│───────────────────┘  │
-      │        │     │   │   │   │   │                      │
-   ┌──┴──┐  ┌──┴──┐  │   │   │   │   │                      │
-   │ 5V  │  │ GND │  │   │   │   │   │                      │
-   │ VCC │  │ GND │  │   │   │   │   │                      │
-   └──┬──┘  └──┬──┘  │   │   │   │   │                      │
-      │        │     │   │   │   │   │                      │
-      ▼        ▼     │   │   │   │   │                      │
-   ┌──────────────────────┐ │   │   │   │                   │
-   │  RELAY 2-CH MODUL    │ │   │   │   │                   │
-   │  IN1 ◄───────────────┘ │   │   │   │                   │
-   │  IN2 ◄─────────────────┘   │   │   │                   │
-   │  COM1  NO1  COM2  NO2      │   │   │                   │
-   └──┬─────┬────┬────┬─────────┘   │   │                   │
-      │     │    │    │             │   │                   │
-      │     │    │    └─────────► Bosch 86                  │
-      │     │    │                                          │
-      │     │    └──────────► +12V (dari aki via fuse)      │
-      │     │                                               │
-      │     └────────► Kabel ignition motor (ke CDI/koil)   │
-      │                                                     │
-      └──────────► +12V (dari aki via fuse)                 │
-                                                            │
-   ┌────────────────────────┐                               │
-   │  RFID RC522 I2C        │                               │
-   │  3.3V GND RST SCL SDA  │                               │
-   └───┬──┬───┬───┬───┬─────┘                               │
-       │  │   │   │   │                                     │
-       ▼  ▼   ▼   ▼   ▼                                     │
-     3.3 GND  D9  A5  A4 (Nano)                             │
-                                                            │
-   ┌────────────────────────────────┐                       │
-   │   RELAY BOSCH 5-PIN 40A        │                       │
-   │   30  87  87a  85  86          │                       │
-   └───┬───┬────────┬───┬───────────┘                       │
-       │   │        │   │                                   │
-       │   │        └───┘─── ke GND ──────────────────────┐ │
-       │   │                                              │ │
-       │   └────────► Solenoid starter (+) [AWG 10]       │ │
-       │                                                  │ │
-       └──────► +12V via fuse 30A [AWG 10]                │ │
-                                                          │ │
-                                                          ▼ ▼
+   ┌─────────────────┐
+   │  AKI MOTOR 12V  │
+   │   +         −   │
+   └───┬─────────┬───┘
+       │         │
+   [Fuse 30A]    │
+       │         │
+       ├─────────┼────────────────────────────────────────┐
+       │         │                                        │
+       ▼         ▼                                        │
+   ┌──────────────────┐                                   │
+   │   STEP-DOWN      │                                   │
+   │   12V → 5V       │                                   │
+   └──┬───────────┬───┘                                   │
+      │+5V        │GND                                    │
+      ▼           ▼                                       │
+   ┌───────────────────────────────────────────────┐      │
+   │              ARDUINO NANO                     │      │
+   │  5V  GND  3V3  D7  D8  D9  A4  A5             │      │
+   └──┬────┬───┬────┬───┬───┬───┬───┬──────────────┘      │
+      │    │   │    │   │   │   │   │                     │
+      │    │   │    │   │   ▼   ▼   ▼                     │
+      │    │   │    │   │  ┌────────────────────┐         │
+      │    │   │    │   │  │  RFID RC522 I2C    │         │
+      │    │   │    │   │  │  RST  SDA  SCL     │         │
+      │    │   │    │   │  │  3.3V─┐  GND─┐     │         │
+      │    │   │    │   │  └───────┼──────┼─────┘         │
+      │    │   │    │   │          │      │               │
+      │    │   │    │   │          (←3V3) (←GND Nano)     │
+      │    │   │    ▼   ▼                                 │
+      ▼    ▼   │  ┌──────────────────────┐                │
+   ┌─────────┐ │  │ RELAY MODUL 2-CH 5V  │                │
+   │5V → VCC │ │  │ IN1  IN2  VCC  GND   │                │
+   │GND → GND│ │  │ COM1 NO1  COM2 NO2   │                │
+   └─────────┘ │  └──┬────┬────┬────┬────┘                │
+               │     │    │    │    │                     │
+               │     │    │    │    └──► Bosch#2 pin 86   │
+               │     │    │    └───────► +12V (via fuse)  │
+               │     │    └────────────► Bosch#1 pin 86   │
+               │     └─────────────────► +12V (via fuse)  │
+               │                                          │
+               │  ┌──────────────────────────────────┐    │
+               │  │ BOSCH #1 (Kunci Kontak)          │    │
+               │  │  86─┐    85─┐    30─┐    87─┐    │    │
+               │  └─────┼───────┼──────┼──────┼─────┘    │
+               │        │       │      │      │          │
+               │     (NO1)  (GND)   (kabel A)(kabel B)    │
+               │                    └─ kunci kontak ─┘    │
+               │                                          │
+               │  ┌──────────────────────────────────┐    │
+               │  │ BOSCH #2 (Starter)               │    │
+               │  │  86─┐    85─┐    30─┐    87─┐    │    │
+               │  └─────┼───────┼──────┼──────┼─────┘    │
+               │        │       │      │      │          │
+               │     (NO2)  (GND)   (kabel A)(kabel B)    │
+               │                    └─ tombol starter ─┘  │
+               │                                          │
+               └──────────────────────────────────────────┤
+                                                          │
                                                   CHASSIS GND
 ```
 
@@ -230,31 +272,41 @@ Semua ground harus disatukan di **1 titik**:
 | Segmen | Dari | Ke | Saran Jalur |
 |---|---|---|---|
 | 1 | Aki (+) | Fuse holder | Pendek, dekat aki |
-| 2 | Fuse | Step-down + relay COM | Via jalur kelistrikan utama |
+| 2 | Fuse | Step-down + relay modul COM1/COM2 | Via jalur kelistrikan utama |
 | 3 | Step-down → Nano | Step-down 5V out | Di dalam boks Nano |
 | 4 | Nano → Relay modul | D7, D8, 5V, GND | Di dalam boks |
 | 5 | Nano → RFID | A4, A5, D9, 3.3V, GND | Lewat kabel data ke posisi modul (jok/dashboard) |
-| 6 | Relay NO1 → kabel kunci kontak | Putus jalur kunci kontak asli, sisipkan relay | Di area kunci kontak |
-| 7 | Relay NO2 → Bosch 86 | Sinyal | Kabel pendek antar relay |
-| 8 | Bosch 30 / 87 → Starter | Output starter | KABEL TEBAL, jalur pendek |
-| 9 | Semua GND → chassis | Titik ground utama | Baut chassis (pakai sepatu kabel ring) |
+| 6 | Relay modul NO1 → Bosch #1 pin 86 | Sinyal trigger | Pendek di dalam boks |
+| 7 | Relay modul NO2 → Bosch #2 pin 86 | Sinyal trigger | Pendek di dalam boks |
+| 8 | Bosch #1 pin 30/87 → 2 kabel kunci kontak motor | Bridge switch | Di area kunci kontak |
+| 9 | Bosch #2 pin 30/87 → 2 kabel tombol starter | Bridge switch | Di area stang/setang |
+| 10 | Semua GND → chassis | Titik ground utama | Baut chassis (pakai sepatu kabel ring) |
 
 ---
 
 ## Cara Cari Kabel di Motor
 
-### Kabel Kunci Kontak (Ignition)
-1. Lepas cover kunci kontak fisik
-2. Cabut soket kunci kontak
-3. Pakai **multimeter** mode 20V DC, probe (+) ke kabel, (−) ke chassis
-4. Putar kunci ke ON → kabel yang **terbaca 12V hanya saat ON** = ini target
-5. Sambungkan **NO1** relay paralel dengan kabel ini (motor jalan dari kunci fisik ATAU RFID)
+### Kabel Kunci Kontak (2 kabel)
 
-### Kabel Starter
-1. Lepas tutup tombol starter di stang
-2. Cari kabel yang **konek ke solenoid starter** saat tombol ditekan
-3. Test pakai multimeter atau lampu test
-4. Sambungkan **Bosch 87** paralel dengan kabel ini
+1. Lepas cover kunci kontak fisik motor
+2. Cabut soket kunci kontak — terlihat **2 kabel utama** (terminal IGN switch)
+3. Pakai **multimeter** mode continuity (beep):
+   - Putar kunci ke **OFF** → 2 kabel tidak terhubung (tidak beep)
+   - Putar kunci ke **ON** → 2 kabel terhubung (beep)
+4. **Itu sepasang kabel target** — sambungkan ke Bosch #1 pin **30** dan **87**
+5. **Tidak perlu peduli polaritas** karena ini cuma switch (bridge)
+
+### Kabel Tombol Starter (2 kabel)
+
+1. Lepas tombol starter di stang kanan (biasanya dilepas dari housing)
+2. Cabut soketnya — biasanya ada **2 kabel** menuju tombol starter
+3. Pakai multimeter mode continuity:
+   - Lepas tombol → tidak terhubung
+   - Tekan tombol → terhubung (beep)
+4. **Itu sepasang kabel target** — sambungkan ke Bosch #2 pin **30** dan **87**
+5. Polaritas bebas
+
+> 💡 Backup: **biarkan kunci kontak & tombol starter fisik tetap terpasang**. Bosch bekerja paralel — jadi motor bisa dihidupkan via RFID **ATAU** cara konvensional.
 
 ---
 

@@ -7,6 +7,7 @@
 ## 1. Overview Sistem
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','secondaryColor':'#ffffff','tertiaryColor':'#f8f8f8','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
 flowchart TB
     subgraph SRC["⚡ SUMBER DAYA"]
         AKI("🔋 Aki Motor 12V")
@@ -52,11 +53,11 @@ flowchart TB
     REL2 -->|"NO2 trigger"| BOSCH
     BOSCH -->|"87 → 12V"| STARTER
 
-    classDef power fill:#ffe0e0,stroke:#c00,stroke-width:2px
-    classDef input fill:#e0f0ff,stroke:#06c,stroke-width:2px
-    classDef brain fill:#fff0e0,stroke:#f80,stroke-width:2px
-    classDef ctrl fill:#e0ffe0,stroke:#080,stroke-width:2px
-    classDef output fill:#ffe0f0,stroke:#c08,stroke-width:2px
+    classDef power fill:#ffd6d6,stroke:#cc0000,stroke-width:2px,color:#000000
+    classDef input fill:#d6e8ff,stroke:#0066cc,stroke-width:2px,color:#000000
+    classDef brain fill:#ffe8d6,stroke:#ff8800,stroke-width:2px,color:#000000
+    classDef ctrl fill:#d6ffd6,stroke:#008800,stroke-width:2px,color:#000000
+    classDef output fill:#ffd6e8,stroke:#cc0088,stroke-width:2px,color:#000000
 
     class AKI,FUSE,STEP power
     class CARD,READER input
@@ -70,6 +71,7 @@ flowchart TB
 ## 2. Detail Wiring Per Pin
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','secondaryColor':'#ffffff','tertiaryColor':'#f8f8f8','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart LR
     subgraph PWR["⚡ POWER (12V)"]
         direction TB
@@ -171,11 +173,11 @@ flowchart LR
     %% ===== GROUND COMMON =====
     AKI_N -.->|"chassis"| CHASSIS
 
-    classDef pwr fill:#ffd6d6,stroke:#c00,color:#000
-    classDef gnd fill:#d6d6d6,stroke:#000,color:#000
-    classDef sig fill:#d6e8ff,stroke:#06c,color:#000
-    classDef hicurrent fill:#ffe0a0,stroke:#e60,stroke-width:3px,color:#000
-    classDef unused fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#999
+    classDef pwr fill:#ffd6d6,stroke:#cc0000,color:#000000,font-weight:bold
+    classDef gnd fill:#d6d6d6,stroke:#000000,color:#000000,font-weight:bold
+    classDef sig fill:#d6e8ff,stroke:#0066cc,color:#000000,font-weight:bold
+    classDef hicurrent fill:#ffe0a0,stroke:#ee6600,stroke-width:3px,color:#000000,font-weight:bold
+    classDef unused fill:#e0e0e0,stroke:#666666,stroke-dasharray:5 5,color:#444444
 
     class AKI_P,FUSE,STEP_IN_P,STEP_OUT_P,N_VIN,N_33,R_VCC,RM_VCC,RM_COM1,RM_COM2,B_30,B_86 pwr
     class AKI_N,STEP_IN_N,STEP_OUT_N,N_GND1,N_GND2,R_GND,RM_GND,B_85,CHASSIS gnd
@@ -191,6 +193,7 @@ flowchart LR
 ### 3.1 RFID → Nano (Sinyal I2C)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
 flowchart LR
     subgraph NANO["Arduino Nano"]
         direction TB
@@ -217,16 +220,23 @@ flowchart LR
     na4 ==>|"🔵 biru"| rsda
     na5 ==>|"🟢 hijau"| rscl
 
-    style rvcc fill:#ffcccc
-    style rgnd fill:#cccccc
-    style rrst fill:#ffffcc
-    style rsda fill:#cce0ff
-    style rscl fill:#ccffcc
+    style rvcc fill:#ffd6d6,color:#000000,stroke:#cc0000
+    style rgnd fill:#d6d6d6,color:#000000,stroke:#000000
+    style rrst fill:#fff8d6,color:#000000,stroke:#cc9900
+    style rsda fill:#d6e8ff,color:#000000,stroke:#0066cc
+    style rscl fill:#d6ffd6,color:#000000,stroke:#008800
+    style rirq fill:#e0e0e0,color:#444444,stroke:#666666,stroke-dasharray:5 5
+    style n33 fill:#ffffff,color:#000000,stroke:#333333
+    style ngnd fill:#ffffff,color:#000000,stroke:#333333
+    style nd9 fill:#ffffff,color:#000000,stroke:#333333
+    style na4 fill:#ffffff,color:#000000,stroke:#333333
+    style na5 fill:#ffffff,color:#000000,stroke:#333333
 ```
 
 ### 3.2 Relay 2-Channel → Nano (Sinyal Kontrol)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
 flowchart LR
     subgraph NANO["Arduino Nano"]
         direction TB
@@ -249,15 +259,20 @@ flowchart LR
     nd7 ==>|"⚪ putih (Kunci Kontak)"| in1
     nd8 ==>|"⚪ abu-abu (Starter Trigger)"| in2
 
-    style vcc fill:#ffcccc
-    style gnd fill:#cccccc
-    style in1 fill:#fff0e0
-    style in2 fill:#fff0e0
+    style vcc fill:#ffd6d6,color:#000000,stroke:#cc0000
+    style gnd fill:#d6d6d6,color:#000000,stroke:#000000
+    style in1 fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style in2 fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style n5v fill:#ffffff,color:#000000,stroke:#333333
+    style ngnd fill:#ffffff,color:#000000,stroke:#333333
+    style nd7 fill:#ffffff,color:#000000,stroke:#333333
+    style nd8 fill:#ffffff,color:#000000,stroke:#333333
 ```
 
 ### 3.3 Relay Channel 1 → Ignition Motor
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
 flowchart LR
     AKI(("🔋 Aki 12V +"))
     FUSE["🔥 Fuse 30A"]
@@ -274,14 +289,18 @@ flowchart LR
     FUSE ==>|"🔴 merah (input)"| com1
     no1 ==>|"🔴 merah (output ke kunci kontak)"| CDI
 
-    style com1 fill:#ffcccc
-    style no1 fill:#ffe0a0,stroke-width:3px
-    style nc1 fill:#f5f5f5,stroke-dasharray:5 5
+    style AKI fill:#ffd6d6,color:#000000,stroke:#cc0000,stroke-width:2px
+    style FUSE fill:#ffe8d6,color:#000000,stroke:#ee6600,stroke-width:2px
+    style com1 fill:#ffd6d6,color:#000000,stroke:#cc0000
+    style no1 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style nc1 fill:#e0e0e0,color:#444444,stroke:#666666,stroke-dasharray:5 5
+    style CDI fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
 ```
 
 ### 3.4 Relay Channel 2 + Bosch → Starter (Cascade)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'15px'}}}%%
 flowchart LR
     AKI(("🔋 Aki 12V +"))
     FUSE["🔥 Fuse 30A"]
@@ -316,13 +335,17 @@ flowchart LR
     b85 -.->|"🔻 katoda ke 86"| DIODE
     DIODE -.-> b86
 
-    style com2 fill:#ffcccc
-    style no2 fill:#fff0e0
-    style b30 fill:#ffe0a0,stroke-width:3px
-    style b87 fill:#ffe0a0,stroke-width:3px
-    style b85 fill:#cccccc
-    style b86 fill:#fff0e0
-    style DIODE fill:#e0e0ff,stroke-dasharray:3 3
+    style AKI fill:#ffd6d6,color:#000000,stroke:#cc0000,stroke-width:2px
+    style FUSE fill:#ffe8d6,color:#000000,stroke:#ee6600,stroke-width:2px
+    style GND fill:#d6d6d6,color:#000000,stroke:#000000,stroke-width:2px
+    style com2 fill:#ffd6d6,color:#000000,stroke:#cc0000
+    style no2 fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style b30 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b87 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:3px
+    style b85 fill:#d6d6d6,color:#000000,stroke:#000000
+    style b86 fill:#ffe8d6,color:#000000,stroke:#ee6600
+    style STARTER fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style DIODE fill:#d6d6ff,color:#000000,stroke:#3333cc,stroke-dasharray:3 3
 ```
 
 ---
@@ -330,6 +353,7 @@ flowchart LR
 ## 4. Diagram Power Distribution
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart TB
     AKI(("🔋 AKI 12V"))
     FUSE["🔥 FUSE 30A"]
@@ -367,9 +391,9 @@ flowchart TB
     BUSGND -.-> K9["Relay GND"]
     BUSGND -.-> K10["Bosch pin 85"]
 
-    classDef hv fill:#ffaaaa,stroke:#c00,stroke-width:3px
-    classDef lv fill:#aaccff,stroke:#06c
-    classDef gnd fill:#aaaaaa,stroke:#000
+    classDef hv fill:#ffaaaa,stroke:#cc0000,stroke-width:3px,color:#000000,font-weight:bold
+    classDef lv fill:#aaccff,stroke:#0066cc,color:#000000,font-weight:bold
+    classDef gnd fill:#bbbbbb,stroke:#000000,color:#000000,font-weight:bold
 
     class AKI,FUSE,BUS12,K1,K2,K3 hv
     class STEP,BUS5,BUS33,K4,K5,K6 lv
@@ -381,6 +405,7 @@ flowchart TB
 ## 5. Diagram State Machine (Logika Toggle)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','labelTextColor':'#000000','noteBkgColor':'#fff8d6','noteTextColor':'#000000','noteBorderColor':'#cc9900','fontSize':'15px'}}}%%
 stateDiagram-v2
     [*] --> OFF: Power ON
 
@@ -423,6 +448,7 @@ stateDiagram-v2
 ## 6. Sequence Diagram (Alur Tap Kartu Valid)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','actorBkg':'#d6e8ff','actorBorder':'#0066cc','actorTextColor':'#000000','actorLineColor':'#333333','signalColor':'#000000','signalTextColor':'#000000','labelBoxBkgColor':'#fff8d6','labelBoxBorderColor':'#cc9900','labelTextColor':'#000000','noteBkgColor':'#fff8d6','noteTextColor':'#000000','noteBorderColor':'#cc9900','fontSize':'14px'}}}%%
 sequenceDiagram
     actor User
     participant Card as 💳 Kartu
@@ -472,6 +498,7 @@ sequenceDiagram
 ## 7. Mapping Pin Lengkap (Tabel + Diagram)
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#333333','lineColor':'#555555','clusterBkg':'#f0f0f0','clusterBorder':'#666666','titleColor':'#000000','edgeLabelBackground':'#ffffff','fontSize':'14px'}}}%%
 flowchart TB
     subgraph NANO_PINS["🤖 Arduino Nano — Pin Mapping"]
         direction LR
@@ -497,15 +524,15 @@ flowchart TB
         end
     end
 
-    style P1 fill:#ffcccc
-    style P2 fill:#cccccc
-    style P3 fill:#ffd6e0
-    style D7 fill:#ffe0a0
-    style D8 fill:#ffe0a0
-    style D9 fill:#ffffcc
-    style A4 fill:#cce0ff
-    style A5 fill:#ccffcc
-    style UN fill:#f5f5f5,stroke-dasharray:5 5,color:#999
+    style P1 fill:#ffd6d6,color:#000000,stroke:#cc0000,stroke-width:2px
+    style P2 fill:#d6d6d6,color:#000000,stroke:#000000,stroke-width:2px
+    style P3 fill:#ffd6e8,color:#000000,stroke:#cc0088,stroke-width:2px
+    style D7 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:2px
+    style D8 fill:#ffe0a0,color:#000000,stroke:#ee6600,stroke-width:2px
+    style D9 fill:#fff8d6,color:#000000,stroke:#cc9900,stroke-width:2px
+    style A4 fill:#d6e8ff,color:#000000,stroke:#0066cc,stroke-width:2px
+    style A5 fill:#d6ffd6,color:#000000,stroke:#008800,stroke-width:2px
+    style UN fill:#e0e0e0,color:#444444,stroke:#666666,stroke-dasharray:5 5
 ```
 
 ---
@@ -535,3 +562,14 @@ flowchart TB
 | **Export PNG** | mermaid.live → tombol `Actions` → `Download PNG/SVG` |
 
 Untuk dapat **file gambar** (PNG/SVG yang bisa di-print), pakai mermaid.live → copy diagram → export.
+
+---
+
+## Catatan untuk Dark Mode
+
+Semua diagram di atas pakai `%%{init: ...}%%` directive yang memaksa:
+- Background node: **putih** (`#ffffff`)
+- Text: **hitam tegas** (`#000000`)
+- Border subgraph: abu gelap (`#666666`)
+
+Jadi tetap kebaca jelas di **GitHub dark mode** maupun light mode.

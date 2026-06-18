@@ -99,6 +99,7 @@ void loop() {
 
   String uid = readUID();
   rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
 
   // Cegah double-tap (anti bouncing antar tap kartu)
   if (millis() - lastTapTime < TAP_COOLDOWN) {
@@ -122,6 +123,9 @@ void loop() {
   } else {
     turnOnMotor();
   }
+
+  // Re-init RFID setelah delay panjang supaya bisa baca tap berikutnya
+  rfid.PCD_Init();
 }
 
 void turnOnMotor() {

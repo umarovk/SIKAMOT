@@ -95,6 +95,7 @@ void loop() {
 
   String uid = readUID();
   rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
 
   if (millis() - lastTapTime < TAP_COOLDOWN) {
     Serial.println(F("[!] Tunggu sebentar sebelum tap lagi..."));
@@ -117,6 +118,9 @@ void loop() {
   } else {
     turnOnMotor();
   }
+
+  // Re-init RFID setelah delay panjang supaya bisa baca tap berikutnya
+  rfid.PCD_Init();
 }
 
 void turnOnMotor() {

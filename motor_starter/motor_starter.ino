@@ -1,20 +1,23 @@
 /*
-  SIKAMOT - Sistem Keamanan Motor dengan Auto Starter
+  SIKAMOT - Sistem Keamanan Motor + Auto Starter (SPI Version)
   Board   : Arduino Nano
-  Modul   : RC522 I2C V1.1 (chip MFRC522)
-  Library : MFRC522_I2C by arozcan (header: MFRC522_I2C.h, class: MFRC522)
+  Modul   : MFRC522 8-pin SPI (SDA/SCK/MOSI/MISO/IRQ/GND/RST/3.3V)
+  Library : MFRC522 by GithubCommunity (SPI version, install via Library Manager)
 
   CARA KERJA:
     - Tap kartu valid (pertama)  → kunci kontak ON + starter crank → MOTOR HIDUP
     - Tap kartu valid (kedua)    → kunci kontak OFF + starter OFF → MOTOR MATI
     - Tap kartu salah            → ditolak, state tidak berubah
 
-  WIRING RFID → Nano
-    3.3V → 3.3V
+  WIRING RFID 8-pin → Nano (SPI)
+    SDA  → D10  (SS / Chip Select SPI)
+    SCK  → D13  (Clock SPI)
+    MOSI → D11  (Master Out Slave In)
+    MISO → D12  (Master In Slave Out)
+    IRQ  → (kosong, tidak dipakai)
     GND  → GND
     RST  → D9
-    SCL  → A5
-    SDA  → A4
+    3.3V → 3.3V (JANGAN ke 5V — modul rusak)
 
   WIRING 2-Channel Relay → Nano
     VCC → 5V
@@ -39,23 +42,23 @@
     Aki 12V (−) → GND aki motor (DAN ke GND Nano — ground harus disatukan)
 
   CATATAN:
+    - Library MFRC522 (SPI) vs MFRC522_I2C (I2C) BENTROK — install salah satu
+    - Untuk varian ini, install MFRC522 by GithubCommunity, uninstall MFRC522_I2C
     - Output Bosch 30↔87 bekerja sebagai SAKLAR PENGGANTI kunci kontak/starter
-    - Tidak mengalirkan 12V dari aki — hanya menyambung 2 kabel motor yang sudah ada
-    - 2 unit Bosch dibutuhkan karena tiap unit cuma SPDT (1 pole)
     - Dioda 1N4007 paralel coil Bosch (katoda ke pin 86) untuk proteksi spike
 */
 
-#include <Wire.h>
-#include <MFRC522_I2C.h>
+#include <SPI.h>
+#include <MFRC522.h>
 
 // ===================== PIN =====================
-#define RFID_ADDR     0x28
-#define RST_PIN       9
-#define IGNITION_PIN  7   // Relay 1 - kunci kontak
-#define STARTER_PIN   8   // Relay 2 - starter motor
+#define SS_PIN        10    // SDA RFID → D10 Nano (SS SPI)
+#define RST_PIN       9     // RST RFID → D9 Nano
+#define IGNITION_PIN  7     // Relay 1 - kunci kontak
+#define STARTER_PIN   8     // Relay 2 - starter motor
 
 // ===================== KONFIGURASI =====================
-#define RELAY_ON      LOW    // balik ke HIGH jika relay active-HIGH
+#define RELAY_ON      LOW   // balik ke HIGH jika relay active-HIGH
 #define RELAY_OFF     HIGH
 
 const unsigned long STARTER_DELAY    = 500;    // jeda kunci kontak → starter (ms)
@@ -72,7 +75,7 @@ const String allowedUIDs[] = {
 const int allowedCount = sizeof(allowedUIDs) / sizeof(allowedUIDs[0]);
 
 // ===================== STATE =====================
-MFRC522 rfid(RFID_ADDR, RST_PIN);
+MFRC522 rfid(SS_PIN, RST_PIN);
 bool motorOn = false;
 unsigned long lastTapTime = 0;
 
@@ -84,10 +87,10 @@ void setup() {
   digitalWrite(IGNITION_PIN, RELAY_OFF);
   digitalWrite(STARTER_PIN, RELAY_OFF);
 
-  Wire.begin();
+  SPI.begin();
   rfid.PCD_Init();
 
-  Serial.println(F("=== SIKAMOT - Sistem Keamanan Motor ==="));
+  Serial.println(F("=== SIKAMOT - Sistem Keamanan Motor (SPI) ==="));
   Serial.println(F("Status: OFF"));
   Serial.println(F("Tap kartu RFID untuk menghidupkan/mematikan motor"));
   Serial.println(F("---"));
@@ -101,7 +104,6 @@ void loop() {
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
 
-  // Cegah double-tap (anti bouncing antar tap kartu)
   if (millis() - lastTapTime < TAP_COOLDOWN) {
     Serial.println(F("[!] Tunggu sebentar sebelum tap lagi..."));
     return;
@@ -128,6 +130,7 @@ void loop() {
   rfid.PCD_Init();
 }
 
+// ===================== MOTOR CONTROL =====================
 void turnOnMotor() {
   Serial.println(F("[OK] AKSES DITERIMA"));
   Serial.println(F(">>> KUNCI KONTAK ON"));
@@ -161,6 +164,7 @@ void turnOffMotor() {
   motorOn = false;
 }
 
+// ===================== RFID HELPER =====================
 String readUID() {
   String uid = "";
   for (byte i = 0; i < rfid.uid.size; i++) {

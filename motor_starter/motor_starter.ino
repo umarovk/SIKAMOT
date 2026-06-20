@@ -1,7 +1,7 @@
 /*
   SIKAMOT - Sistem Keamanan Motor + Auto Starter (SPI Version)
   Board   : Arduino Nano
-  Modul   : MFRC522 8-pin SPI (SDA/SCK/MOSI/MISO/IRQ/GND/RST/3.3V)
+  Modul   : MFRC522 8-pin SPI v2.0 (SDA/SCK/MOSI/MISO/IRQ/GND/RST/3.3V)
   Library : MFRC522 by GithubCommunity (SPI version, install via Library Manager)
 
   CARA KERJA:
@@ -65,12 +65,9 @@ const unsigned long STARTER_DELAY    = 500;    // jeda kunci kontak → starter 
 const unsigned long STARTER_DURATION = 2000;   // durasi starter crank (ms)
 const unsigned long TAP_COOLDOWN     = 2000;   // jeda minimum antar tap kartu
 
-// UID kartu yang diizinkan — GANTI sesuai UID asli kamu
+// UID kartu yang diizinkan (4 byte hex, huruf besar, dipisah spasi)
 const String allowedUIDs[] = {
-  "DE AD BE EF",
-  "A1 B2 C3 D4",
-  "61 FB C1 01",
-  "0D 86 F6 03"
+  "3C 8A 52 07"   // kartu utama (Mifare 1KB)
 };
 const int allowedCount = sizeof(allowedUIDs) / sizeof(allowedUIDs[0]);
 
@@ -97,8 +94,33 @@ void setup() {
 }
 
 void loop() {
-  if (!rfid.PICC_IsNewCardPresent()) return;
-  if (!rfid.PICC_ReadCardSerial())   return;
+  // Cek kartu di field — pakai REQA (kartu baru) atau WUPA (kartu halted).
+  byte atqa[2];
+  byte atqaSize = sizeof(atqa);
+  MFRC522::StatusCode reqResult = rfid.PICC_RequestA(atqa, &atqaSize);
+  if (reqResult != MFRC522::STATUS_OK) {
+    atqaSize = sizeof(atqa);
+    MFRC522::StatusCode wupResult = rfid.PICC_WakeupA(atqa, &atqaSize);
+    if (wupResult != MFRC522::STATUS_OK) {
+      // ===== DEBUG (hapus setelah issue selesai) =====
+      static unsigned long lastDbg = 0;
+      if (millis() - lastDbg > 3000) {
+        Serial.print(F("[DBG] motorOn="));
+        Serial.print(motorOn);
+        Serial.print(F(" reqA=0x"));
+        Serial.print(reqResult, HEX);
+        Serial.print(F(" wupA=0x"));
+        Serial.println(wupResult, HEX);
+        lastDbg = millis();
+      }
+      return;
+    }
+    Serial.println(F("[DBG] WUPA OK — kartu halted ke-wake-up"));
+  }
+  if (!rfid.PICC_ReadCardSerial()) {
+    Serial.println(F("[DBG] read serial FAILED"));
+    return;
+  }
 
   String uid = readUID();
   rfid.PICC_HaltA();
@@ -126,8 +148,8 @@ void loop() {
     turnOnMotor();
   }
 
-  // Re-init RFID setelah delay panjang supaya bisa baca tap berikutnya
-  rfid.PCD_Init();
+  // Pastikan antenna tetap aktif setelah delay panjang turnOn/turnOff
+  rfid.PCD_AntennaOn();
 }
 
 // ===================== MOTOR CONTROL =====================
